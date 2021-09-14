@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <error.h>
 #include <errno.h>
+#include <sys/resource.h>
 
 #include <bpf.h>
 #include <libbpf.h>
@@ -22,13 +23,30 @@ const struct option longopts[] =
 
 __u8 cont = 1;
 
+char *dev = NULL;
+char *objfile = NULL;
+
 void sighndl(int tmp)
 {
     cont = 0;
 }
 
-char *dev = NULL;
-char *objfile = NULL;
+/**
+ * Raises the RLimit.
+ * 
+ * @return Returns 0 on success (EXIT_SUCCESS) or 1 on failure (EXIT_FAILURE).
+ */
+int raise_rlimit()
+{
+    struct rlimit r = {RLIM_INFINITY, RLIM_INFINITY};
+
+    if (setrlimit(RLIMIT_MEMLOCK, &r))
+    {
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
 
 void parsecmdline(int argc, char *argv[])
 {
@@ -58,6 +76,14 @@ void parsecmdline(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+    // Raise RLimit
+    if (raise_rlimit() != 0)
+    {
+        fprintf(stderr, "Error setting rlimit. Please ensure you're running this program as a privileged user.\n");
+
+        return EXIT_FAILURE;
+    }
+
     // Parse command line.
     parsecmdline(argc, argv);
 
