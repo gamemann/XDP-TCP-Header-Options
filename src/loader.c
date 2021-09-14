@@ -28,7 +28,7 @@ void sighndl(int tmp)
 
 char *dev = NULL;
 
-void parsecmdline(int argc, char *argv[], struct cmdline *cmd)
+void parsecmdline(int argc, char *argv[])
 {
     int c = -1;
 
@@ -51,6 +51,9 @@ void parsecmdline(int argc, char *argv[], struct cmdline *cmd)
 
 int main(int argc, char *argv[])
 {
+    // Parse command line.
+    parsecmdline(argc, argv);
+
     // Check if we have an interface specified.
     if (dev == NULL)
     {
