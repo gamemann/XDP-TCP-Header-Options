@@ -21,13 +21,13 @@ XDPOBJ = xdp.o
 INCS = -I $(LIBBPFSRC)
 
 all: loader xdp
+loader: libbpf
+	mkdir -p $(BUILDDIR)
+	clang $(INCS) $(LOADERFLAGS) -O3 -o $(BUILDDIR)/$(LOADEROUT) $(LIBBPFOBJS) $(SRCDIR)/$(LOADERSRC)
 xdp:
 	mkdir -p $(BUILDDIR)
 	clang $(INCS) -D__BPF__ -Wall -Wextra -O2 -emit-llvm -c $(SRCDIR)/$(XDPSRC) -o $(BUILDDIR)/$(XDPBC)
 	llc -march=bpf -filetype=obj $(BUILDDIR)/$(XDPBC) -o $(BUILDDIR)/$(XDPOBJ)
-loader: libbpf
-	mkdir -p $(BUILDDIR)
-	clang $(INCS) $(LOADERFLAGS) -O3 -o $(BUILDDIR)/$(LOADEROUT) $(LIBBPFOBJS) $(SRCDIR)/$(LOADERSRC)
 libbpf:
 	$(MAKE) -C $(LIBBPFSRC)
 install:
