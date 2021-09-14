@@ -85,6 +85,8 @@ int main(int argc, char *argv[])
         objfile = "/etc/tcpopts/xdp.o";
     }
 
+    fprintf(stdout, "Attempting to load BPF object file => %s.\n", objfile);
+
     struct bpf_object *obj = NULL;
     int bpffd = -1;
 
