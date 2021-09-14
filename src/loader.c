@@ -16,6 +16,7 @@
 const struct option longopts[] =
 {
     {"interface", required_argument, NULL, 'i'},
+    {"obj", required_argument, NULL, 'o'},
     {NULL, 0, NULL, 0}
 };
 
@@ -27,17 +28,23 @@ void sighndl(int tmp)
 }
 
 char *dev = NULL;
+char *objfile = NULL;
 
 void parsecmdline(int argc, char *argv[])
 {
     int c = -1;
 
-    while ((c = getopt_long(argc, argv, "i:", longopts, NULL)) != -1)
+    while ((c = getopt_long(argc, argv, "i:o:", longopts, NULL)) != -1)
     {
         switch (c)
         {
             case 'i':
                 dev = optarg;
+
+                break;
+
+            case 'o':
+                objfile = optarg;
 
                 break;
 
@@ -72,8 +79,11 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    // Path to XDP object file.
-    char *objfile = "/etc/tcpopts/xdp.o";
+    // If we don't have an object path, set to default.
+    if (objfile == NULL)
+    {
+        objfile = "/etc/tcpopts/xdp.o";
+    }
 
     struct bpf_object *obj = NULL;
     int bpffd = -1;
