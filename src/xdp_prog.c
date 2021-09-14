@@ -80,7 +80,7 @@ int prog(struct xdp_md *ctx)
             // 0x01 indicates a NOP which must be skipped.
             if (*val == 0x01)
             {
-                 bpf_printk("[TCPOPTS] Skipping NOP.\n");
+                bpf_printk("[TCPOPTS] Skipping NOP.\n");
 
                 optdata++;
 
@@ -118,7 +118,7 @@ int prog(struct xdp_md *ctx)
                 // Length should be above 0 and below 11 (max length is 34 bytes).
                 if (*len > 0 && *len < 35)
                 {
-                        bpf_printk("[TCPOPTS] Found option length => %d! Option type => %d.\n", *len, *val);
+                    bpf_printk("[TCPOPTS] Found option length => %d! Option type => %d.\n", *len, *val);
 
                     optdata += *len;
                     
