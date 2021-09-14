@@ -60,7 +60,7 @@ int prog(struct xdp_md *ctx)
     // Check to see if we have additional TCP header options.
     if (tcph->doff > 5)
     {
-         bpf_printk("[TCPOPTS] Have TCP header options. Header length => %d. Beginning to parse options.\n", tcph->doff * 5);
+        bpf_printk("[TCPOPTS] Have TCP header options. Header length => %d. Beginning to parse options.\n", tcph->doff * 5);
 
         __u16 off = 0;
         __u8 *opts = data + sizeof(struct ethhdr) + (iph->ihl * 4) + 20;
