@@ -6,6 +6,8 @@
 #include <linux/tcp.h>
 #include <linux/in.h>
 
+#include "xdp_prog.h"
+
 #define bpf_printk(fmt, ...)					\
 ({								\
 	       char ____fmt[] = fmt;				\
