@@ -65,7 +65,14 @@ int prog(struct xdp_md *ctx)
         __u16 off = 0;
         __u8 *opts = data + sizeof(struct ethhdr) + (iph->ihl * 4) + 20;
 
-        for (__u16 optdata = 0; optdata <= 40;)
+        if (opts + 1 > (__u8 *)data_end)
+        {
+            return XDP_PASS;
+        }
+
+        __u16 optdata = 0;
+
+        while (optdata <= 40)
         {
             // Initialize the byte we're parsing and ensure it isn't outside of data_end.
             __u8 *val = opts + optdata;
@@ -75,7 +82,7 @@ int prog(struct xdp_md *ctx)
                 break;
             }
 
-            bpf_printk("[TCPOPTS] Received %d as type code.\n", val);
+            //bpf_printk("[TCPOPTS] Received %d as type code.\n", *val);
 
             // 0x01 indicates a NOP which must be skipped.
             if (*val == 0x01)
@@ -97,14 +104,14 @@ int prog(struct xdp_md *ctx)
                 // Adjust offset by two since +1 = option length and +2 = start of timestamps data.
                 off = optdata + 2;
 
-                bpf_printk("[TCPOPTS] Found start of timestamps! Offset => %d.\n", off);
+                //bpf_printk("[TCPOPTS] Found start of timestamps! Offset => %d.\n", off);
 
                 break;
             }
             // We need to increase by the option's length field for other options.
             else
             {
-                bpf_printk("[TCPOPTS] Found TCP option length!\n");
+                //bpf_printk("[TCPOPTS] Found TCP option length!\n");
 
                 // Increase by option length (which is val + 1 since the option length is the second field).
                 __u8 *len = val + 1;
@@ -115,15 +122,11 @@ int prog(struct xdp_md *ctx)
                     break;
                 }
 
-                // Length should be above 0 and below 11 (max length is 34 bytes).
-                if (*len > 0 && *len < 35)
-                {
-                    bpf_printk("[TCPOPTS] Found option length => %d! Option type => %d.\n", *len, *val);
+                //bpf_printk("[TCPOPTS] Found option length => %d! Option type => %d.\n", *len, *val);
 
-                    optdata += *len;
-                    
-                    continue;
-                }
+                optdata += (*len > 0) ? *len : 1;
+
+                continue;
             }
 
             // We shouldn't get here, but increment to prevent an infinite loop either way.
@@ -142,7 +145,7 @@ int prog(struct xdp_md *ctx)
                 // Receive timestamp should be the second 32-bit value.
                 recvts = (__u32 *)opts + off + 4;
 
-                bpf_printk("[TCPOPTS] Sender TS Value => %lu. Receive TS Value => %lu.\n", *senderts, *recvts);
+                //bpf_printk("[TCPOPTS] Sender TS Value => %lu. Receive TS Value => %lu.\n", *senderts, *recvts);
             }
         }
     }
