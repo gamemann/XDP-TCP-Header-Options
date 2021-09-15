@@ -64,7 +64,7 @@ If you stop incrementing `optdata` by `*len`, the XDP program loads. For example
 ```C
 if (len <= (__u8 *)data_end && len >= (__u8 *)data)
 {
-    optdata ++;
+    optdata++;
 }
 else
 {
