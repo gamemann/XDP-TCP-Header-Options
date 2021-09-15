@@ -8,7 +8,7 @@
 
 #include "xdp_prog.h"
 
-#define PRINT
+//#define PRINT
 
 #ifdef PRINT
 #define bpf_printk(fmt, ...)					\
@@ -83,7 +83,7 @@ int prog(struct xdp_md *ctx)
             // Initialize the byte we're parsing and ensure it isn't outside of data_end.
             __u8 *val = opts + optdata;
 
-            if (val + 1 > (__u8 *)data_end)
+            if (val + 1 > (__u8 *)data_end || val < (__u8 *)data)
             {
                 break;
             }
@@ -124,14 +124,14 @@ int prog(struct xdp_md *ctx)
             else
             {
                 #ifdef PRINT
-                    bpf_printk("[TCPOPTS] Found TCP option length!\n");
+                    bpf_printk("[TCPOPTS] Found another TCP option! Adjusting by its length.\n");
                 #endif
 
                 // Increase by option length (which is val + 1 since the option length is the second field).
                 __u8 *len = val + 1;
                 
-                // Check to make sure the length pointer doesn't go outside of data_end (the packet).
-                if (len + 1 > (__u8 *)data_end)
+                // Check to make sure the length pointer doesn't go outside of data_end and data (the packet).
+                if (len + 1 > (__u8 *)data_end || len < (__u8 *)data)
                 {
                     break;
                 }
@@ -140,8 +140,17 @@ int prog(struct xdp_md *ctx)
                     bpf_printk("[TCPOPTS] Found option length => %d! Option type => %d.\n", *len, *val);
                 #endif
 
-                optdata += (*len > 0) ? *len : 1;
-
+                // This check shouldn't be needed, but just for safe measure, perform another check before incrementing optdata by the option's length.
+                if (len <= (__u8 *)data_end && len >= (__u8 *)data)
+                {
+                    optdata += (*len > 0) ? *len : 1;
+                }
+                else
+                {
+                    // Avoid an infinite loop.
+                    optdata++;
+                }
+                
                 continue;
             }
 
@@ -153,7 +162,7 @@ int prog(struct xdp_md *ctx)
         if (off > 0)
         {
             // We'll need to make sure 8 bytes after the offset is not outside of the packet since the two timestamps variables are 32 bits (8 bytes).
-            if (opts + off + 8 <= (__u8 *)data_end)
+            if (opts + off + 8 <= (__u8 *)data_end && opts + off + 8 >= (__u8 *)data)
             {
                 // Sender timestamp should be the first 32-bit value.
                 senderts = (__u32 *)opts + off;
