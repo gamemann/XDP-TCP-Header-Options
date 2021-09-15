@@ -45,7 +45,7 @@ int prog(struct xdp_md *ctx)
         return XDP_DROP;
     }
 
-    if (iph->protocol != IPPROTO_UDP)
+    if (iph->protocol != IPPROTO_TCP)
     {
         return XDP_PASS;
     }
