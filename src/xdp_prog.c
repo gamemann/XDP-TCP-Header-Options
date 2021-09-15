@@ -57,7 +57,7 @@ int prog(struct xdp_md *ctx)
         return XDP_DROP;
     }
 
-    // These variables will indicates the timestamp values in memory if found (otherwise NULL).
+    // These variables will indicate the timestamp values in memory if found (otherwise NULL).
     __u32 *senderts = NULL;
     __u32 *recvts = NULL;
 
