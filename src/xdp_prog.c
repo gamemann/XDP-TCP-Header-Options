@@ -8,12 +8,16 @@
 
 #include "xdp_prog.h"
 
+#define PRINT
+
+#ifdef PRINT
 #define bpf_printk(fmt, ...)					\
 ({								\
 	       char ____fmt[] = fmt;				\
 	       bpf_trace_printk(____fmt, sizeof(____fmt),	\
 				##__VA_ARGS__);			\
 })
+#endif
 
 SEC("xdp_prog")
 int prog(struct xdp_md *ctx)
@@ -60,7 +64,9 @@ int prog(struct xdp_md *ctx)
     // Check to see if we have additional TCP header options.
     if (tcph->doff > 5)
     {
-        bpf_printk("[TCPOPTS] Have TCP header options. Header length => %d. Beginning to parse options.\n", tcph->doff * 5);
+        #ifdef PRINT
+            bpf_printk("[TCPOPTS] Have TCP header options. Header length => %d. Beginning to parse options.\n", tcph->doff * 5);
+        #endif
 
         __u16 off = 0;
         __u8 *opts = data + sizeof(struct ethhdr) + (iph->ihl * 4) + 20;
@@ -82,12 +88,16 @@ int prog(struct xdp_md *ctx)
                 break;
             }
 
-            //bpf_printk("[TCPOPTS] Received %d as type code.\n", *val);
+            #ifdef PRINT
+                bpf_printk("[TCPOPTS] Received %d as type code.\n", *val);
+            #endif
 
             // 0x01 indicates a NOP which must be skipped.
             if (*val == 0x01)
             {
-                bpf_printk("[TCPOPTS] Skipping NOP.\n");
+                #ifdef PRINT
+                    bpf_printk("[TCPOPTS] Skipping NOP.\n");
+                #endif
 
                 optdata++;
 
@@ -104,14 +114,18 @@ int prog(struct xdp_md *ctx)
                 // Adjust offset by two since +1 = option length and +2 = start of timestamps data.
                 off = optdata + 2;
 
-                //bpf_printk("[TCPOPTS] Found start of timestamps! Offset => %d.\n", off);
+                #ifdef PRINT
+                    bpf_printk("[TCPOPTS] Found start of timestamps! Offset => %d.\n", off);
+                #endif
 
                 break;
             }
             // We need to increase by the option's length field for other options.
             else
             {
-                //bpf_printk("[TCPOPTS] Found TCP option length!\n");
+                #ifdef PRINT
+                    bpf_printk("[TCPOPTS] Found TCP option length!\n");
+                #endif
 
                 // Increase by option length (which is val + 1 since the option length is the second field).
                 __u8 *len = val + 1;
@@ -122,7 +136,9 @@ int prog(struct xdp_md *ctx)
                     break;
                 }
 
-                //bpf_printk("[TCPOPTS] Found option length => %d! Option type => %d.\n", *len, *val);
+                #ifdef PRINT
+                    bpf_printk("[TCPOPTS] Found option length => %d! Option type => %d.\n", *len, *val);
+                #endif
 
                 optdata += (*len > 0) ? *len : 1;
 
@@ -145,7 +161,9 @@ int prog(struct xdp_md *ctx)
                 // Receive timestamp should be the second 32-bit value.
                 recvts = (__u32 *)opts + off + 4;
 
-                //bpf_printk("[TCPOPTS] Sender TS Value => %lu. Receive TS Value => %lu.\n", *senderts, *recvts);
+                #ifdef PRINT
+                    bpf_printk("[TCPOPTS] Sender TS Value => %lu. Receive TS Value => %lu.\n", *senderts, *recvts);
+                #endif
             }
         }
     }
