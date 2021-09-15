@@ -75,5 +75,12 @@ else
 
 Loads without any issues.
 
+## Other Notes
+I found an article [here](https://legacy.netdevconf.info/0x14/pub/slides/50/Issuing%20SYN%20Cookies%20in%20XDP.pdf) where it appears the creator was having similar issues. At the end, under challenges/next steps you can see:
+
+> Parsing variable number of TCP options is challenging for the verifier
+
+Being able to parse TCP header options in XDP/BPF would be very useful in my opinion. The code I have right now has many checks that I don't think are needed, but I'm not able to tell the BPF verifier the code is safe/within the packet range for some reason when incrementing by a dynamic value.
+
 ## Credits
 * [Christian Deacon](https://github.com/gamemann)
