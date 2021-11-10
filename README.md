@@ -1,4 +1,115 @@
 # XDP/BPF TCP Header Options Parsing
+## Update 11-9-2021
+Around a month or so ago, I asked how to locate the TCP header timestamp options inside of XDP and thanks to Toke Høiland-Jørgensen [here](https://marc.info/?l=xdp-newbies&m=163178833212690&w=2), I was able to parse the TCP header timestamp options. I ended up using a modified version of [this](https://github.com/xdp-project/bpf-examples/blob/master/pping/pping_kern.c#L83) function which can be found below.
+
+```C
+static __always_inline int parse_tcp_ts(struct tcphdr *tcph, void *data_end, __u32 **tsval, __u32 **tsecr)
+{
+	int len = tcph->doff << 2;
+	void *opt_end = (void *)tcph + len;
+	__u8 *pos = (__u8 *)(tcph + 1);
+	__u8 i, opt;
+	volatile __u8 opt_size;
+
+	if (tcph + 1 > (struct tcphdr *)data_end || len <= sizeof(struct tcphdr))
+    {
+        #ifdef TCPOPTSDEBUG
+            bpf_printk("parse_tcp_ts() :: tcph + 1 > (struct tcphdr *)data_end || len <= sizeof(struct tcphdr)\n");
+        #endif
+
+		return -1;
+    }
+
+#pragma unroll
+	for (i = 0; i < MAX_TCP_OPTIONS; i++) 
+    {
+		if (pos + 1 > (__u8 *)opt_end || pos + 1 > (__u8 *)data_end)
+        {
+            #ifdef TCPOPTSDEBUG
+                bpf_printk("parse_tcp_ts() :: pos + 1 > (__u8 *)opt_end || pos + 1 > (__u8 *)data_end\n");
+            #endif
+
+			return -1;
+        }
+
+		opt = *pos;
+
+		if (opt == 0)
+        {
+            #ifdef TCPOPTSDEBUG
+                bpf_printk("parse_tcp_ts() :: opt == 0\n");
+            #endif
+
+			return -1;
+        }
+
+		if (opt == 1)
+        {
+			pos++;
+
+			continue;
+		}
+
+		if (pos + 2 > (__u8 *)opt_end || pos + 2 > (__u8 *)data_end)
+        {
+            #ifdef TCPOPTSDEBUG
+                bpf_printk("parse_tcp_ts() :: pos + 2 > (__u8 *)opt_end || pos + 2 > (__u8 *)data_end\n");
+            #endif
+
+			return -1;
+        }
+
+		opt_size = *(pos + 1);
+
+		if (opt_size < 2)
+        {
+            #ifdef TCPOPTSDEBUG
+                bpf_printk("parse_tcp_ts() :: opt_size < 2\n");
+            #endif
+
+			return -1;
+        }
+
+		if (opt == 8 && opt_size == 10) 
+        {
+			if (pos + 10 > (__u8 *)opt_end || pos + 10 > (__u8 *)data_end)
+            {
+                #ifdef TCPOPTSDEBUG
+                    bpf_printk("parse_tcp_ts() :: pos + 10 > (__u8 *)opt_end || pos + 10 > (__u8 *)data_end\n");
+                #endif
+
+				return -1;
+            }
+
+			*tsval = (__u32 *)(pos + 2);
+			*tsecr = (__u32 *)(pos + 6);
+
+			return 0;
+		}
+
+		pos += opt_size;
+	}
+
+    #ifdef TCPOPTSDEBUG
+        bpf_printk("parse_tcp_ts() :: Reached end (return -1).\n");
+    #endif
+
+	return -1;
+}
+
+...
+
+__u32 *sendval = NULL;
+__u32 *echoval = NULL;
+
+parse_tcp_ts(tcph, data_end, &sendval, &recvval);
+
+if (sendval != NULL && echoval != NULL)
+{
+    // Timestamps found and pointers are valid.
+}
+```
+
 ## Description
 A repository to show attempts at dynamically parsing the TCP header options (specifically timestamps in this repository) within XDP/BPF.
 
