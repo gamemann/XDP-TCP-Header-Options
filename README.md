@@ -102,7 +102,7 @@ static __always_inline int parse_tcp_ts(struct tcphdr *tcph, void *data_end, __u
 __u32 *sendval = NULL;
 __u32 *echoval = NULL;
 
-parse_tcp_ts(tcph, data_end, &sendval, &recvval);
+parse_tcp_ts(tcph, data_end, &sendval, &echoval);
 
 if (sendval != NULL && echoval != NULL)
 {
